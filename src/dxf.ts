@@ -23,6 +23,15 @@ const CUT_H = 6
 const DIM_STYLE = 'ABAK_BA'
 const DIM_H = 5
 const DIM_ROW = 16
+// Cotes de giron de l'exemple (style ABAK_BA-RESA) : texte ABAK_RESA (Tahoma oblique 20°) de 4 posé à 4,1 au-dessus,
+// trait oblique de 2, lignes d'attache de 9 (6 côté objet, 3 au-delà), ligne de cote à 12 du limon, dans l'escalier.
+const GIR_STYLE = 'ABAK_BA-RESA'
+const GIR_TXT = 'ABAK_RESA'
+const GIR_H = 4
+const GIR_OFF = 12
+interface DimLook { style: string; font: string; h: number; gap: number; ext: [number, number]; tick: number }
+const BA: DimLook = { style: DIM_STYLE, font: DIM_STYLE, h: DIM_H, gap: 4.6, ext: [10, 3], tick: 1.3 }
+const RESA: DimLook = { style: GIR_STYLE, font: GIR_TXT, h: GIR_H, gap: 4.1, ext: [6, 3], tick: 1 }
 
 // Une vue tournée de `rotation` degrés (sens trigo) autour du centre de l'escalier, puis décalée de (dx, dy).
 // Les textes restent horizontaux. `brut` : sans la couche de finition (contremarches finies).
@@ -151,24 +160,25 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
 
   // Une vraie cote AutoCAD (linéaire, étirable) entre les angles v1 et v2 du contour : entité DIMENSION + bloc anonyme
   // qui la dessine comme l'exemple (lignes d'attache de longueur fixe, traits obliques, texte centré au-dessus).
-  // `pos(v, d)` : projection de v sur la ligne de cote, décalée de d vers l'extérieur.
-  const dim = (v1: Pt, v2: Pt, pos: (v: Pt, d?: number) => Pt, t: Pt, up: Pt) => {
+  // `pos(v, d)` : projection de v sur la ligne de cote, décalée de d vers l'extérieur. `t` : sens de lecture, `up` : côté du texte.
+  const dim = (v1: Pt, v2: Pt, pos: (v: Pt, d?: number) => Pt, t: Pt, up: Pt, look = BA) => {
     const name = `*D${blocks.length + 1}`
     const xy = (p: Pt) => ['10', `${p.x}`, '20', `${p.y}`, '30', '0']
     const lin = (p: Pt, q: Pt) => ['0', 'LINE', '8', COTA, ...xy(p), '11', `${q.x}`, '21', `${q.y}`, '31', '0']
     const pt = (p: Pt) => ['0', 'POINT', '8', 'DEFPOINTS', ...xy(p)]
     const [d1, d2] = [pos(v1), pos(v2)]
     const len = Math.hypot(d2.x - d1.x, d2.y - d1.y)
-    const mid = at({ x: (d1.x + d2.x) / 2, y: (d1.y + d2.y) / 2 }, up, 4.6)
-    const rot = t.y ? 90 : 0
-    const tick = (c: Pt) => lin(at(at(c, t, -1.3), up, -1.3), at(at(c, t, 1.3), up, 1.3)) // trait oblique à 45°
+    const mid = at({ x: (d1.x + d2.x) / 2, y: (d1.y + d2.y) / 2 }, up, look.gap)
+    const rot = Math.round((Math.atan2(t.y, t.x) * 180) / Math.PI * 1e6) / 1e6
+    const k = look.tick
+    const tick = (c: Pt) => lin(at(at(c, t, -k), up, -k), at(at(c, t, k), up, k)) // trait oblique à 45°
     blocks.push(['0', 'BLOCK', '8', '0', '2', name, '70', '1', '10', '0', '20', '0', '30', '0', '3', name,
-      ...lin(d1, d2), ...lin(pos(v1, -10), pos(v1, 3)), ...lin(pos(v2, -10), pos(v2, 3)), ...tick(d1), ...tick(d2),
+      ...lin(d1, d2), ...lin(pos(v1, -look.ext[0]), pos(v1, look.ext[1])), ...lin(pos(v2, -look.ext[0]), pos(v2, look.ext[1])), ...tick(d1), ...tick(d2),
       // ponytail: texte toujours centré, il peut déborder d'une cote très courte (< 2 caractères de large).
-      '0', 'TEXT', '8', COTA, '7', DIM_STYLE, ...xy(mid), '40', `${DIM_H}`, '1', String(Math.round(len * 10) / 10),
+      '0', 'TEXT', '8', COTA, '7', look.font, ...xy(mid), '40', `${look.h}`, '1', String(Math.round(len * 10) / 10),
       '50', `${rot}`, '72', '1', '73', '2', '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
       ...pt(v1), ...pt(v2), ...pt(d2), '0', 'ENDBLK', '8', '0'].join('\r\n'))
-    ents.push('0', 'DIMENSION', '8', COTA, '2', name, '3', DIM_STYLE, ...xy(d2), '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
+    ents.push('0', 'DIMENSION', '8', COTA, '2', name, '3', look.style, ...xy(d2), '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
       '70', '0', '1', '', '13', `${v1.x}`, '23', `${v1.y}`, '33', '0', '14', `${v2.x}`, '24', `${v2.y}`, '34', '0', '50', `${rot}`,
       // Surcharge DIMSCALE = 20 : le style ABAK_BA du gabarit (annotatif, DIMSCALE 1) l'emporte à l'insertion et
       // dessinerait sinon les cotes à l'échelle 1, minuscules.
@@ -213,6 +223,40 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
         const pos = (v: Pt, d = 0): Pt => ({ x: t.x * dot(v, t) + nrm.x * (o + d), y: t.y * dot(v, t) + nrm.y * (o + d) })
         row.slice(1).forEach((v2, i) => dim(row[i], v2, pos, t, up))
       })
+    }
+
+    // Cotes de giron (intérieur et extérieur), comme l'exemple : sur chaque partie droite d'un limon, chaîne des
+    // points où les contremarches brutes le rencontrent, de bout en bout, ligne de cote dans l'escalier.
+    for (const [limon, end] of [[outer, 'brutOuter'], [inner, 'brutInner']] as const) {
+      const L = limon.map((p) => out(scr(p)))
+      const hits = r.risers.map((x) => ({ p: out(scr(x[end])), m: out(scr({ x: (x.brutInner.x + x.brutOuter.x) / 2, y: (x.brutInner.y + x.brutOuter.y) / 2 })) }))
+      // Parties droites : segments consécutifs alignés fusionnés.
+      const runs: [Pt, Pt][] = []
+      L.slice(1).forEach((b, i) => {
+        const a = L[i]
+        if (Math.hypot(b.x - a.x, b.y - a.y) < 1e-6) return
+        const last = runs[runs.length - 1]
+        if (last && Math.abs(turn(last[0], last[1], b)) < 1e-9) last[1] = b
+        else runs.push([a, b])
+      })
+      for (const [A, B] of runs) {
+        const len = Math.hypot(B.x - A.x, B.y - A.y)
+        // ponytail: les parties de moins de 15 (arcs du jour échantillonnés, bout de jour) ne sont pas cotées, comme l'exemple.
+        if (len < 15) continue
+        let t = unit(A, B)
+        if (t.x < -1e-9 || (Math.abs(t.x) < 1e-9 && t.y < 0)) t = { x: -t.x, y: -t.y } // lecture gauche → droite, bas → haut
+        const up = { x: -t.y, y: t.x }
+        const on = hits.filter(({ p }) => Math.abs(dot({ x: p.x - A.x, y: p.y - A.y }, up)) < 0.01)
+          .map((h) => ({ ...h, s: dot({ x: h.p.x - A.x, y: h.p.y - A.y }, unit(A, B)) }))
+          .filter(({ s }) => s > 0.05 && s < len - 0.05)
+        if (!on.length) continue
+        // Côté escalier : celui du milieu de la contremarche.
+        const m = on[0].m
+        const into = dot({ x: m.x - A.x, y: m.y - A.y }, up) > 0 ? up : { x: -up.x, y: -up.y }
+        const pos = (v: Pt, d = 0): Pt => at(v, into, GIR_OFF + d)
+        const row = [A, ...on.map(({ p }) => p), B].sort((a, b) => dot(a, t) - dot(b, t))
+        row.slice(1).forEach((v2, i) => dim(row[i], v2, pos, t, up, RESA))
+      }
     }
   }
 
@@ -267,8 +311,8 @@ export const planDxf = (r: StairResult): string => {
   // à l'insertion (BDR-006) ; un style déjà présent dans le dessin cible garde sa définition.
   const def = (name: string, h: number, oblique: number, font: string) =>
     ['0', 'STYLE', '2', name, '70', '0', '40', '0', '41', '1', '50', `${oblique}`, '71', '0', '42', `${h}`, '3', font, '4', '']
-  const style = ['0', 'TABLE', '2', 'STYLE', '70', '3', ...def(NUM_STYLE, NUM_H, 20, 'tahoma.ttf'),
-    ...def(CUT_STYLE, CUT_H, 0, 'arialbi.ttf'), ...def(DIM_STYLE, DIM_H, 0, 'tahoma.ttf'), '0', 'ENDTAB']
+  const style = ['0', 'TABLE', '2', 'STYLE', '70', '4', ...def(NUM_STYLE, NUM_H, 20, 'tahoma.ttf'),
+    ...def(CUT_STYLE, CUT_H, 0, 'arialbi.ttf'), ...def(DIM_STYLE, DIM_H, 0, 'tahoma.ttf'), ...def(GIR_TXT, GIR_H, 20, 'tahoma.ttf'), '0', 'ENDTAB']
   // Style de cote ABAK_BA de l'exemple, en R12 (non annotatif) : échelle 20, traits obliques (DIMTSZ), texte au-dessus,
   // arrondi au mm (DIMRND) sans zéros inutiles (DIMZIN 8).
   const dimVars: [string, string][] = [['3', ''], ['4', ''], ['5', ''], ['6', ''], ['7', ''], ['40', '20'], ['41', '0.13'],
@@ -276,7 +320,10 @@ export const planDxf = (r: StairResult): string => {
     ['142', '0.13'], ['143', '25.4'], ['144', '1'], ['145', '0'], ['146', '1'], ['147', '0.1'], ['71', '0'], ['72', '0'], ['73', '0'],
     ['74', '0'], ['75', '0'], ['76', '0'], ['77', '1'], ['78', '8'], ['170', '0'], ['171', '2'], ['172', '1'], ['173', '0'],
     ['174', '1'], ['175', '0'], ['176', '0'], ['177', '0'], ['178', '0']]
-  const dimstyle = ['0', 'TABLE', '2', 'DIMSTYLE', '70', '1', '0', 'DIMSTYLE', '2', DIM_STYLE, '70', '0', ...dimVars.flat(), '0', 'ENDTAB']
+  // Cotes de giron (ABAK_BA-RESA) : texte 0,2 et trait oblique 0,1 au lieu de 0,25 et 0,13.
+  const resaVars = dimVars.map(([c, v]): [string, string] => [c, c === '140' ? '0.2' : c === '41' || c === '142' ? '0.1' : v])
+  const dimstyle = ['0', 'TABLE', '2', 'DIMSTYLE', '70', '2', '0', 'DIMSTYLE', '2', DIM_STYLE, '70', '0', ...dimVars.flat(),
+    '0', 'DIMSTYLE', '2', GIR_STYLE, '70', '0', ...resaVars.flat(), '0', 'ENDTAB']
   const appid = ['0', 'TABLE', '2', 'APPID', '70', '1', '0', 'APPID', '2', 'ACAD', '70', '0', '0', 'ENDTAB'] // pour la surcharge des cotes
   return ['0', 'SECTION', '2', 'TABLES', ...style, ...appid, ...dimstyle, '0', 'ENDSEC',
     '0', 'SECTION', '2', 'BLOCKS', ...blocks, '0', 'ENDSEC', '0', 'SECTION', '2', 'ENTITIES', ...ents, '0', 'ENDSEC', '0', 'EOF', '']
