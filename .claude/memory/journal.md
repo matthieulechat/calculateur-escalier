@@ -147,3 +147,12 @@ Cotes de giron intérieur et extérieur dans l'export DXF. Baptiste a montré sa
 **Entrées clés :**
 
 - [BDR-025](decisions/BDR-025.md) — Cotes de giron DXF au style ABAK_BA-RESA
+
+---
+
+Enrichissement des coupes DXF. Les traits d'axe aux bouts des coupes ne ferment plus que les planchers coupés. Un bout de coupe qui tombe dans la volée (coupes A/B/C d'un quart tournant) est fermé en béton brut, avec la finition descendue jusqu'au brut. Numérotation des marches dans les coupes : d'abord seules les marches dont la contremarche est traversée, puis aussi la marche entamée au bord. Recherche anti-collision pour le cas d'une marche entamée courte, orientée vers l'extérieur à la demande de Baptiste. Commit 56e1d0c.
+
+**Entrées clés :**
+
+- [BDR-026](decisions/BDR-026.md) — Coupes : axe aux planchers, fermeture brute dans la volée
+- [BDR-027](decisions/BDR-027.md) — Coupes : numéros de marche, marche entamée comprise

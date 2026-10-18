@@ -31,3 +31,5 @@ register: decisions
 | [BDR-023](decisions/BDR-023.md) | 2026-10-18 | Cotes globales DXF : vraies DIMENSION au style ABAK_BA | #dxf #dimension #dimstyle #abak #autocad #r12 | actif |
 | [BDR-024](decisions/BDR-024.md) | 2026-10-18 | Emmarchement par volée, profondeur du demi-tour saisie | #emmarchement #volee #foulee #tournant #mur-du-fond #saisie #demi-tournant | actif |
 | [BDR-025](decisions/BDR-025.md) | 2026-10-18 | Cotes de giron DXF au style ABAK_BA-RESA | #dxf #dimension #giron #resa #limon #abak | actif |
+| [BDR-026](decisions/BDR-026.md) | 2026-10-18 | Coupes : axe aux planchers, fermeture brute dans la volée | #coupe #dxf #calques #plancher #fermeture #abak | actif |
+| [BDR-027](decisions/BDR-027.md) | 2026-10-18 | Coupes : numéros de marche, marche entamée comprise | #coupe #dxf #numerotation #marches #annotation #collision | actif |
