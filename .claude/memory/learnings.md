@@ -25,7 +25,7 @@ register: learnings
 | [LRN-017](learnings/LRN-017.md) | 2026-10-17 | Contrôler un DXF : SVG servi par `public/` du serveur | #dxf #svg #preview #claude-browser #verification #vite |
 | [LRN-018](learnings/LRN-018.md) | 2026-10-17 | `grep` via rtk : `\\|` non géré, « 0 matches » trompeur | #rtk #grep #ripgrep #regex #verification #claude-code |
 | [LRN-019](learnings/LRN-019.md) | 2026-10-17 | Bash bloqué 120 s : `cat > fichier` sans heredoc | #claude-code #bash #stdin #heredoc #timeout #background |
-| [LRN-020](learnings/LRN-020.md) | 2026-10-17 | Lire un DWG R2018 sans AutoCAD : libredwg-web en Node | #dwg #autocad #libredwg #wasm #node #reverse-engineering |
+| [LRN-020](learnings/LRN-020.md) | 2026-10-17 | Lire un DWG R2018 sans AutoCAD : libredwg-web en Node | #dwg #autocad #libredwg #wasm #node #reverse-engineering #dimension |
 | [LRN-021](learnings/LRN-021.md) | 2026-10-17 | Valider un DXF hors AutoCAD : `ezdxf recover` | #dxf #ezdxf #python #validation #autocad #verification |
 | [LRN-022](learnings/LRN-022.md) | 2026-10-17 | Retour « rendu faux » : vérifier d'abord la version du fichier | #pwa #cache #debug #export #verification #stale-build |
 | [LRN-023](learnings/LRN-023.md) | 2026-10-17 | Overlay HTML vertical : coller un bord au point d'ancrage | #css #transform #rotate #overlay #positioning #svg |

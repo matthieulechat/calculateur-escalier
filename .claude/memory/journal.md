@@ -139,3 +139,11 @@ Emmarchement par volée : `largeur` (départ) et `largeur2` (arrivée) en quart 
 
 - [BDR-024](decisions/BDR-024.md) — emmarchement par volée, profondeur du demi-tour saisie
 - [BLK-015](blockers/BLK-015.md) — hook formateur hors style du projet
+
+---
+
+Cotes de giron intérieur et extérieur dans l'export DXF. Baptiste a montré sa capture et le DWG d'exemple : les « cotes obliques » sont les chaînes au style `ABAK_BA-RESA` (texte Tahoma oblique 20°, hauteur 4) posées le long de chaque limon droit, entre les contremarches brutes. Relevé fait en réutilisant le `db.json` d'une session précédente (DIMENSION puis bloc anonyme pour les longueurs réelles). Le helper `dim()` de `dxf.ts` est paramétré par un `DimLook` (style, hauteur, écart du texte, attaches, trait) et accepte toute direction ; un second DIMSTYLE et un style de texte oblique entrent dans les tables. Validé sur droit, quart, demi (jour droit et arrondi) et vue tournée : 0 erreur ezdxf, rendu proche de l'exemple. Commit `fe12a70` poussé. Reste à vérifier dans AutoCAD au bureau (taille une fois insérées dans le gabarit, petites cotes de 1 à 2 cm aux bouts qui se chevauchent).
+
+**Entrées clés :**
+
+- [BDR-025](decisions/BDR-025.md) — Cotes de giron DXF au style ABAK_BA-RESA
