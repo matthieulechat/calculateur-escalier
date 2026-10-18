@@ -38,6 +38,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Saisie regroupée dans un panneau repliable « Saisie de l'escalier », avec des titres Configuration, Plan et Coupe ; cartes de cotes opaques et plus compactes, légende du plan centrée sous le schéma.
 - Export DXF : numéros de marche au style du bureau (Tahoma oblique, hauteur 6 cm) collés à la foulée côté jour, et bouts des lignes de coupe en triangle plein avec lettre en gras italique, comme dans les plans du bureau.
 - Configuration en boutons visuels : type d'escalier (droit, 1/4, 1/2 tournant) avec pictogramme, bouton « Inverser » pour le sens, bouton jour droit / arrondi dont le dessin suit le choix.
+- Coupes de l'export DXF : les traits d'axe ne ferment plus que les planchers coupés ; un bout de coupe qui tombe dans la volée est fermé en béton brut et en finition. Chaque marche coupée porte son numéro (01, 02…), y compris la marche entamée au bord, décalé vers l'extérieur s'il touche un trait.
 - Orientation du plan choisie par 4 boutons pictogrammes (flèche = sens de montée) : les schémas de saisie, le plan annoté et l'export DXF tournent ensemble.
 - Cotes verticales des schémas de saisie écrites à la verticale, collées à leur cote, et emmarchement dessiné plus large ; schémas centrés et à la même échelle dans toutes les orientations.
 - Étiquettes du plan annoté placées au plus près de leur cible, sans recouvrir le dessin, dans des cartes bleues assorties aux champs de saisie (cartes bleues aussi en saisie).

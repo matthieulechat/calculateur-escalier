@@ -273,14 +273,16 @@ const sections = (r: StairResult, x0: number, yTop: number, gap: number, h: numb
   const mirror = r.input.sens === 'droite'
   let x = x0
   for (const c of cutLines(r)) {
-    const { fini, brut, sousFace, ends } = cutProfile(r, c)
+    const { fini, brut, sousFace, ends, closes, marches } = cutProfile(r, c)
     const x0c = Math.min(...brut.map((p) => p.x))
     const w = Math.max(...fini.map((p) => p.x), ...brut.map((p) => p.x)) - x0c
     const top = Math.max(...brut.map((p) => p.y), ...fini.map((p) => p.y))
     const out = (p: Pt): Pt => ({ x: x + (mirror ? w - (p.x - x0c) : p.x - x0c), y: yTop - top + p.y })
+    const drawn: [Pt, Pt][] = [] // traits de la coupe (repère DXF), que les numéros ne doivent pas toucher
     const segs = (layer: string, pts: Pt[]) =>
       pts.slice(1).forEach((p, i) => {
         const [a, b] = [out(pts[i]), out(p)]
+        drawn.push([a, b])
         if (Math.hypot(b.x - a.x, b.y - a.y) > 1e-6)
           ents.push('0', 'LINE', '8', layer, '10', `${a.x}`, '20', `${a.y}`, '30', '0', '11', `${b.x}`, '21', `${b.y}`, '31', '0')
       })
@@ -288,6 +290,26 @@ const sections = (r: StairResult, x0: number, yTop: number, gap: number, h: numb
     segs(COUPE, brut)
     segs(COUPE, sousFace)
     ends.forEach((e) => segs(AXE, e))
+    closes.forEach((e) => segs(COUPE, e))
+    // Numéros au-dessus de chaque marche, côté nez, comme le plan (italique ABAK_ANNO_RESA).
+    // S'il touche un trait (marche entamée courte), recherche au plus près au-dessus de la marche, vers l'extérieur.
+    const [hw, hh] = [1.075 * NUM_H, 0.7 * NUM_H] // demi-largeur / demi-hauteur du texte, marge comprise
+    const free = (c: Pt) => drawn.every(([a, b]) => !hitsBox(a, b, c.x - hw, c.x + hw, c.y - hh, c.y + hh))
+    const tries: Pt[] = []
+    for (let dx = -6 * NUM_H; dx <= 6 * NUM_H; dx += 0.2 * NUM_H)
+      for (let dy = 0; dy <= 4 * NUM_H; dy += 0.2 * NUM_H) tries.push({ x: dx, y: dy })
+    // Vers l'extérieur de l'escalier d'abord (côté départ de la coupe, dehors au bord), l'intérieur en dernier recours.
+    const cost = (d: Pt) => Math.hypot(d.x, d.y) + (d.x > 0 ? 100 * NUM_H : 0)
+    tries.sort((u, v) => cost(u) - cost(v))
+    for (const { num, p } of marches) {
+      const pref = { x: p.x + 1.3 * NUM_H, y: p.y + 0.9 * NUM_H }
+      // ponytail: recherche en grille (~1000 essais par marche), suffisant pour ~20 marches.
+      const m = tries.map((d) => out({ x: pref.x + d.x, y: pref.y + d.y })).find(free) ?? out(pref)
+      const box: Pt[] = [{ x: m.x - hw, y: m.y - hh }, { x: m.x + hw, y: m.y - hh }, { x: m.x + hw, y: m.y + hh }, { x: m.x - hw, y: m.y + hh }]
+      box.forEach((b, i) => drawn.push([b, box[(i + 1) % 4]])) // les numéros suivants l'évitent aussi
+      ents.push('0', 'TEXT', '8', NUM, '10', `${m.x}`, '20', `${m.y}`, '30', '0', '40', `${NUM_H}`, '1', String(num).padStart(2, '0'),
+        '7', NUM_STYLE, '51', '20', '72', '1', '73', '2', '11', `${m.x}`, '21', `${m.y}`, '31', '0')
+    }
     const bottom = Math.min(...brut.map((p) => p.y), ...sousFace.map((p) => p.y))
     const t = out({ x: x0c + w / 2, y: bottom })
     ents.push(...text(t.x, t.y - 2.5 * h, 1.5 * h, `COUPE ${c.name}-${c.name}`))
