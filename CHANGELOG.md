@@ -30,6 +30,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Cotes de giron intérieur et extérieur sur le plan fini de l'export DXF : chaîne des contremarches brutes le long de chaque limon droit (jour et murs), cotes AutoCAD étirables au style `ABAK_BA-RESA` du bureau, texte oblique.
 - Cote intérieure brute sur chaque volée du plan fini de l'export DXF : longueur du limon jusqu'au bout du jour, puis emmarchement jusqu'au mur du fond.
 - Emmarchement saisi par volée (départ et arrivée) pour les quart et demi tournants : la ligne de foulée passe progressivement d'une distance au jour à l'autre dans le tournant, et le plan cote les deux emmarchements. En demi-tournant, la profondeur du tournant (du bout du jour au mur du fond) se saisit à part. Les anciens fichiers de paramètres reprennent le même emmarchement sur les deux volées, et le plus grand des deux comme profondeur.
+- Cotes de hauteur sur les coupes de l'export DXF, côté départ, de brut à brut : les hauteurs égales qui se suivent sont regroupées en « n x h » (ex. 6 x 16.5).
+- Cotes de finition sur chaque coupe de l'export DXF, sur la marche du milieu, au calque `ABAK_BC-STR METAL` : épaisseur de la finition de marche au milieu du giron brut et de la contremarche à mi-hauteur de la contremarche brute, sans toucher les numéros de marche.
 
 ### Changed
 

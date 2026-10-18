@@ -29,9 +29,41 @@ const GIR_STYLE = 'ABAK_BA-RESA'
 const GIR_TXT = 'ABAK_RESA'
 const GIR_H = 4
 const GIR_OFF = 12
-interface DimLook { style: string; font: string; h: number; gap: number; ext: [number, number]; tick: number }
+interface DimLook { style: string; font: string; h: number; gap: number; ext: [number, number]; tick: number; layer?: string }
 const BA: DimLook = { style: DIM_STYLE, font: DIM_STYLE, h: DIM_H, gap: 4.6, ext: [10, 3], tick: 1.3 }
 const RESA: DimLook = { style: GIR_STYLE, font: GIR_TXT, h: GIR_H, gap: 4.1, ext: [6, 3], tick: 1 }
+// Cotes de finition des coupes (exemple) : comme les girons, sur le calque métal (orange), lignes d'attache courtes en croix.
+const FINI: DimLook = { ...RESA, ext: [2, 2], layer: 'ABAK_BC-STR METAL' }
+
+const at = (p: Pt, d: Pt, k: number, n = 0): Pt => ({ x: p.x + d.x * k - d.y * n, y: p.y + d.y * k + d.x * n })
+
+// Une vraie cote AutoCAD (linéaire, étirable) entre les angles v1 et v2 du contour : entité DIMENSION + bloc anonyme
+// qui la dessine comme l'exemple (lignes d'attache de longueur fixe, traits obliques, texte centré au-dessus).
+// `pos(v, d)` : projection de v sur la ligne de cote, décalée de d vers l'extérieur. `t` : sens de lecture, `up` : côté du texte.
+type DimArgs = [v1: Pt, v2: Pt, pos: (v: Pt, d?: number) => Pt, t: Pt, up: Pt, look?: DimLook, label?: string]
+const addDim = (blocks: string[], ents: string[], ...[v1, v2, pos, t, up, look = BA, label]: DimArgs) => {
+  const name = `*D${blocks.length + 1}`
+  const xy = (p: Pt) => ['10', `${p.x}`, '20', `${p.y}`, '30', '0']
+  const lin = (p: Pt, q: Pt) => ['0', 'LINE', '8', look.layer ?? COTA, ...xy(p), '11', `${q.x}`, '21', `${q.y}`, '31', '0']
+  const pt = (p: Pt) => ['0', 'POINT', '8', 'DEFPOINTS', ...xy(p)]
+  const [d1, d2] = [pos(v1), pos(v2)]
+  const len = Math.hypot(d2.x - d1.x, d2.y - d1.y)
+  const mid = at({ x: (d1.x + d2.x) / 2, y: (d1.y + d2.y) / 2 }, up, look.gap)
+  const rot = Math.round((Math.atan2(t.y, t.x) * 180) / Math.PI * 1e6) / 1e6
+  const k = look.tick
+  const tick = (c: Pt) => lin(at(at(c, t, -k), up, -k), at(at(c, t, k), up, k)) // trait oblique à 45°
+  blocks.push(['0', 'BLOCK', '8', '0', '2', name, '70', '1', '10', '0', '20', '0', '30', '0', '3', name,
+    ...lin(d1, d2), ...lin(pos(v1, -look.ext[0]), pos(v1, look.ext[1])), ...lin(pos(v2, -look.ext[0]), pos(v2, look.ext[1])), ...tick(d1), ...tick(d2),
+    // ponytail: texte toujours centré, il peut déborder d'une cote très courte (< 2 caractères de large).
+    '0', 'TEXT', '8', look.layer ?? COTA, '7', look.font, ...xy(mid), '40', `${look.h}`, '1', label ?? String(Math.round(len * 10) / 10),
+    '50', `${rot}`, '72', '1', '73', '2', '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
+    ...pt(v1), ...pt(v2), ...pt(d2), '0', 'ENDBLK', '8', '0'].join('\r\n'))
+  ents.push('0', 'DIMENSION', '8', look.layer ?? COTA, '2', name, '3', look.style, ...xy(d2), '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
+    '70', '0', '1', label ?? '', '13', `${v1.x}`, '23', `${v1.y}`, '33', '0', '14', `${v2.x}`, '24', `${v2.y}`, '34', '0', '50', `${rot}`,
+    // Surcharge DIMSCALE = 20 : le style ABAK_BA du gabarit (annotatif, DIMSCALE 1) l'emporte à l'insertion et
+    // dessinerait sinon les cotes à l'échelle 1, minuscules.
+    '1001', 'ACAD', '1000', 'DSTYLE', '1002', '{', '1070', '40', '1040', '20', '1002', '}')
+}
 
 // Une vue tournée de `rotation` degrés (sens trigo) autour du centre de l'escalier, puis décalée de (dx, dy).
 // Les textes restent horizontaux. `brut` : sans la couche de finition (contremarches finies).
@@ -95,7 +127,6 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
     const l = Math.hypot(q.x - p.x, q.y - p.y) || 1
     return { x: (q.x - p.x) / l, y: (q.y - p.y) / l }
   }
-  const at = (p: Pt, d: Pt, k: number, n = 0): Pt => ({ x: p.x + d.x * k - d.y * n, y: p.y + d.y * k + d.x * n })
   const f = r.fouleeLine.map(scr)
   const d0 = unit(f[0], f[1])
   const start = at(f[0], d0, -1.1 * h)
@@ -158,32 +189,7 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
       '7', NUM_STYLE, '51', '20', '72', '1', '73', '2', '11', `${c.x}`, '21', `${c.y}`, '31', '0')
   })
 
-  // Une vraie cote AutoCAD (linéaire, étirable) entre les angles v1 et v2 du contour : entité DIMENSION + bloc anonyme
-  // qui la dessine comme l'exemple (lignes d'attache de longueur fixe, traits obliques, texte centré au-dessus).
-  // `pos(v, d)` : projection de v sur la ligne de cote, décalée de d vers l'extérieur. `t` : sens de lecture, `up` : côté du texte.
-  const dim = (v1: Pt, v2: Pt, pos: (v: Pt, d?: number) => Pt, t: Pt, up: Pt, look = BA) => {
-    const name = `*D${blocks.length + 1}`
-    const xy = (p: Pt) => ['10', `${p.x}`, '20', `${p.y}`, '30', '0']
-    const lin = (p: Pt, q: Pt) => ['0', 'LINE', '8', COTA, ...xy(p), '11', `${q.x}`, '21', `${q.y}`, '31', '0']
-    const pt = (p: Pt) => ['0', 'POINT', '8', 'DEFPOINTS', ...xy(p)]
-    const [d1, d2] = [pos(v1), pos(v2)]
-    const len = Math.hypot(d2.x - d1.x, d2.y - d1.y)
-    const mid = at({ x: (d1.x + d2.x) / 2, y: (d1.y + d2.y) / 2 }, up, look.gap)
-    const rot = Math.round((Math.atan2(t.y, t.x) * 180) / Math.PI * 1e6) / 1e6
-    const k = look.tick
-    const tick = (c: Pt) => lin(at(at(c, t, -k), up, -k), at(at(c, t, k), up, k)) // trait oblique à 45°
-    blocks.push(['0', 'BLOCK', '8', '0', '2', name, '70', '1', '10', '0', '20', '0', '30', '0', '3', name,
-      ...lin(d1, d2), ...lin(pos(v1, -look.ext[0]), pos(v1, look.ext[1])), ...lin(pos(v2, -look.ext[0]), pos(v2, look.ext[1])), ...tick(d1), ...tick(d2),
-      // ponytail: texte toujours centré, il peut déborder d'une cote très courte (< 2 caractères de large).
-      '0', 'TEXT', '8', COTA, '7', look.font, ...xy(mid), '40', `${look.h}`, '1', String(Math.round(len * 10) / 10),
-      '50', `${rot}`, '72', '1', '73', '2', '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
-      ...pt(v1), ...pt(v2), ...pt(d2), '0', 'ENDBLK', '8', '0'].join('\r\n'))
-    ents.push('0', 'DIMENSION', '8', COTA, '2', name, '3', look.style, ...xy(d2), '11', `${mid.x}`, '21', `${mid.y}`, '31', '0',
-      '70', '0', '1', '', '13', `${v1.x}`, '23', `${v1.y}`, '33', '0', '14', `${v2.x}`, '24', `${v2.y}`, '34', '0', '50', `${rot}`,
-      // Surcharge DIMSCALE = 20 : le style ABAK_BA du gabarit (annotatif, DIMSCALE 1) l'emporte à l'insertion et
-      // dessinerait sinon les cotes à l'échelle 1, minuscules.
-      '1001', 'ACAD', '1000', 'DSTYLE', '1002', '{', '1070', '40', '1040', '20', '1002', '}')
-  }
+  const dim = (...a: DimArgs) => addDim(blocks, ents, ...a)
 
   // Cotes globales du contour béton (vue finie seulement, pour le maçon), droites, à l'extérieur des 4 côtés du contour : sur chaque côté, les angles
   // du contour visibles depuis l'extérieur donnent une chaîne (ex. 90 / 10 / 90), puis la cote totale au-delà.
@@ -284,7 +290,7 @@ const text = (x: number, y: number, h: number, s: string) =>
 
 // Coupes A, B… alignées sur une ligne sous les plans, z vers le haut depuis le NF départ.
 // Vue vers le jour : en sens « droite », la montée va de droite à gauche.
-const sections = (r: StairResult, x0: number, yTop: number, gap: number, h: number): string[] => {
+const sections = (r: StairResult, blocks: string[], x0: number, yTop: number, gap: number, h: number): string[] => {
   const ents: string[] = []
   const mirror = r.input.sens === 'droite'
   let x = x0
@@ -307,6 +313,35 @@ const sections = (r: StairResult, x0: number, yTop: number, gap: number, h: numb
     segs(COUPE, sousFace)
     ends.forEach((e) => segs(AXE, e))
     closes.forEach((e) => segs(COUPE, e))
+    // Cotes de finition sur la marche du milieu : épaisseur de la finition de marche (verticale, à mi-giron brut) et de
+    // contremarche (horizontale, à mi-hauteur de la contremarche brute). Le nez brut est la contremarche brute la plus proche.
+    // Leur emprise est ajoutée aux traits pour que les numéros ne les touchent pas.
+    const keep = (x0: number, x1: number, y0: number, y1: number) => {
+      const box: Pt[] = [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }]
+      box.forEach((b, i) => drawn.push([b, box[(i + 1) % 4]]))
+    }
+    const mid = marches[Math.floor(marches.length / 2)]
+    const { finMarche: eM, finContremarche: eC } = r.input
+    if (mid) {
+      const P = mid.p
+      const nose = brut.slice(1).map((q, i) => ({ p: brut[i], q })).filter(({ p, q }) => Math.abs(p.x - q.x) < 1e-6 && q.y > p.y + 1e-6)
+        .sort((u, v) => Math.hypot(u.q.x - P.x, u.q.y - P.y + eM) - Math.hypot(v.q.x - P.x, v.q.y - P.y + eM))[0]
+      if (nose && eM > 0) {
+        // Mi-giron brut : du nez brut à la contremarche brute suivante (ou au bout du profil).
+        const next = Math.min(...brut.filter((q, i) => i > 0 && q.x > nose.q.x + 1e-6 && Math.abs(q.x - brut[i - 1].x) < 1e-6).map((q) => q.x), brut[brut.length - 1].x)
+        const x = (nose.q.x + next) / 2
+        const [v1, v2] = [out({ x, y: nose.q.y }), out({ x, y: P.y })]
+        keep(v1.x - FINI.gap - FINI.h, v1.x + FINI.ext[1], v1.y - FINI.h, v2.y + FINI.h)
+        addDim(blocks, ents, v1, v2, (v, d = 0) => ({ x: v.x + d, y: v.y }),
+          { x: 0, y: 1 }, { x: -1, y: 0 }, FINI)
+      }
+      if (nose && eC > 0) {
+        const y = out({ x: 0, y: (nose.p.y + nose.q.y) / 2 }).y // mi-hauteur de la contremarche brute
+        const [a, b] = [out({ x: P.x, y: 0 }), out({ x: nose.q.x, y: 0 })].sort((u, v) => u.x - v.x)
+        keep(a.x - FINI.h, b.x + FINI.h, y - FINI.ext[0], y + FINI.gap + FINI.h)
+        addDim(blocks, ents, { x: a.x, y }, { x: b.x, y }, (v, d = 0) => ({ x: v.x, y: v.y + d }), { x: 1, y: 0 }, { x: 0, y: 1 }, FINI)
+      }
+    }
     // Numéros au-dessus de chaque marche, côté nez, comme le plan (italique ABAK_ANNO_RESA).
     // S'il touche un trait (marche entamée courte), recherche au plus près au-dessus de la marche, vers l'extérieur.
     const [hw, hh] = [1.075 * NUM_H, 0.7 * NUM_H] // demi-largeur / demi-hauteur du texte, marge comprise
@@ -326,6 +361,22 @@ const sections = (r: StairResult, x0: number, yTop: number, gap: number, h: numb
       ents.push('0', 'TEXT', '8', NUM, '10', `${m.x}`, '20', `${m.y}`, '30', '0', '40', `${NUM_H}`, '1', String(num).padStart(2, '0'),
         '7', NUM_STYLE, '51', '20', '72', '1', '73', '2', '11', `${m.x}`, '21', `${m.y}`, '31', '0')
     }
+    // Cotes de hauteur, de brut à brut, côté départ (comme l'exemple) : chaque niveau brut du profil, les hauteurs
+    // égales qui se suivent regroupées en « n x h ».
+    const levels = brut.map((p) => p.y).filter((y, i, all) => i === 0 || Math.abs(y - all[i - 1]) > 0.05)
+    const side = mirror ? 1 : -1
+    const xDim = x + (mirror ? w : 0)
+    const pos = (v: Pt, d = 0): Pt => ({ x: xDim + side * (DIM_ROW + d), y: v.y })
+    const lv = (y: number): Pt => ({ x: xDim, y: out({ x: 0, y }).y })
+    const runs: { from: number; to: number; ht: number; n: number }[] = []
+    levels.slice(1).forEach((y, i) => {
+      const ht = Math.round((y - levels[i]) * 10) / 10
+      const last = runs[runs.length - 1]
+      if (last && last.ht === ht) Object.assign(last, { to: y, n: last.n + 1 })
+      else runs.push({ from: levels[i], to: y, ht, n: 1 })
+    })
+    for (const { from, to, ht, n } of runs)
+      addDim(blocks, ents, lv(from), lv(to), pos, { x: 0, y: 1 }, { x: -1, y: 0 }, BA, n > 1 ? `${n} x ${ht}` : undefined)
     const bottom = Math.min(...brut.map((p) => p.y), ...sousFace.map((p) => p.y))
     const t = out({ x: x0c + w / 2, y: bottom })
     ents.push(...text(t.x, t.y - 2.5 * h, 1.5 * h, `COUPE ${c.name}-${c.name}`))
@@ -344,7 +395,7 @@ export const planDxf = (r: StairResult): string => {
   )
   const blocks: string[] = []
   const ents = [...view(r, rotation, blocks, 0), ...view(r, rotation, blocks, diag * 1.3, 0, true)]
-  ents.push(...sections(r, -diag / 2, -diag * 0.75, diag * 0.3, diag / 50))
+  ents.push(...sections(r, blocks, -diag / 2, -diag * 0.75, diag * 0.3, diag / 50))
   // Tables : styles de texte (numéros, lettres de coupe, cotes) et style de cote. Les calques restent ceux du gabarit
   // à l'insertion (BDR-006) ; un style déjà présent dans le dessin cible garde sa définition.
   const def = (name: string, h: number, oblique: number, font: string) =>
