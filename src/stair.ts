@@ -10,6 +10,7 @@ export interface StairInput {
   orientation?: number // degrés sens trigo : rotation du plan dans l'export DXF (0, 90, 180, 270)
   largeur: number // emmarchement de la volée de départ (seule volée si droit)
   largeur2: number // emmarchement de la volée d'arrivée
+  profondeur: number // demi : du bout du jour au mur du fond (zone tournante)
   jour: number // quart : rayon du jour arrondi ; demi : largeur du jour
   jourArrondi: boolean // false = jour droit (angles vifs)
   volee1: number // de la 1re contremarche au mur du fond (longueur de foulée si droit)
@@ -197,10 +198,10 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
   const W2 = type === 'droit' ? W1 : input.largeur2
   // Volées cotées jusqu'au mur du fond : on retire la profondeur de la zone tournante et le rayon du jour
   // arrondi pour obtenir la partie droite au jour. Quart : le mur du fond d'une volée borde l'autre volée.
-  // Demi : mur du fond commun, à la distance du plus large des deux emmarchements.
+  // Demi : mur du fond commun, à la profondeur saisie.
   const rj = input.jourArrondi ? (type === 'demi' ? input.jour / 2 : input.jour) : 0
-  const back1 = type === 'quart' ? W2 : Math.max(W1, W2)
-  const back2 = type === 'quart' ? W1 : Math.max(W1, W2)
+  const back1 = type === 'quart' ? W2 : input.profondeur
+  const back2 = type === 'quart' ? W1 : input.profondeur
   const L1 = type === 'droit' ? input.volee1 : input.volee1 - back1 - rj
   const L2 = type === 'droit' ? 0 : input.volee2 - back2 - rj
   const segs = buildSegs(input, L1, L2)
@@ -216,6 +217,8 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
   const lf = L1 + turnF + L2
 
   if (W1 <= 0 || W2 <= 0 || input.jour < 0) return { error: 'Dimensions invalides.' }
+  if (type === 'demi' && input.profondeur <= Math.max(f, f2))
+    return { error: 'Profondeur du tournant trop faible : la ligne de foulée passerait derrière le mur du fond.' }
   if (L1 < 0 || L2 < 0) return { error: 'Volée plus courte que l’emmarchement + le jour : vérifier les longueurs jusqu’au mur du fond.' }
   if (H <= 0) return { error: 'Le niveau fini haut doit être au-dessus du niveau fini bas.' }
   if (lf <= 0) return { error: 'Longueur de foulée nulle.' }

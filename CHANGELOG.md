@@ -27,7 +27,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Saisie de l'épaisseur du plancher bas, représenté dans les coupes exportées.
 - Vue en plan brute dans l'export DXF, à droite du plan fini : sans contremarches finies, ligne de foulée ni numéros, contremarches intermédiaires sur le calque fin.
 - Cotes globales de coffrage sur le plan fini de l'export DXF, pour le maçon : contour de l'escalier en béton brut, de trait plein à trait plein, en chaîne (ex. 90 / 10 / 90) puis cote totale sur chaque côté. Ce sont de vraies cotes AutoCAD, étirables, au style `ABAK_BA` du bureau, à la bonne taille une fois insérées dans le gabarit.
-- Emmarchement saisi par volée (départ et arrivée) pour les quart et demi tournants : la ligne de foulée passe progressivement d'une distance au jour à l'autre dans le tournant, et le plan cote les deux emmarchements. Les anciens fichiers de paramètres reprennent le même emmarchement sur les deux volées.
+- Emmarchement saisi par volée (départ et arrivée) pour les quart et demi tournants : la ligne de foulée passe progressivement d'une distance au jour à l'autre dans le tournant, et le plan cote les deux emmarchements. En demi-tournant, la profondeur du tournant (du bout du jour au mur du fond) se saisit à part. Les anciens fichiers de paramètres reprennent le même emmarchement sur les deux volées, et le plus grand des deux comme profondeur.
 
 ### Changed
 

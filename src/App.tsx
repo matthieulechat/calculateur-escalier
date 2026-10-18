@@ -18,6 +18,7 @@ const DEFAULTS: StairInput = {
   sens: "gauche",
   largeur: 90,
   largeur2: 90,
+  profondeur: 90,
   jour: 20,
   jourArrondi: false,
   volee1: 220,
@@ -63,7 +64,9 @@ const App = () => {
         throw new Error();
       const p = data as Partial<StairInput>;
       // Fichier antérieur à l'emmarchement par volée : même emmarchement sur les deux volées.
-      setInput({ ...DEFAULTS, largeur2: p.largeur ?? DEFAULTS.largeur2, ...p });
+      const largeur2 = p.largeur2 ?? p.largeur ?? DEFAULTS.largeur2;
+      const profondeur = Math.max(p.largeur ?? DEFAULTS.largeur, largeur2);
+      setInput({ ...DEFAULTS, largeur2, profondeur, ...p });
     } catch {
       alert("Fichier de paramètres invalide.");
     }

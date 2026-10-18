@@ -51,6 +51,7 @@ const PlanSchema = ({ value, onChange }: SaisieProps) => {
       { k: 'jour', label: 'Largeur du jour', x: 200, y: 150, dim: [262, 110, 262, 190] },
       { k: 'largeur', label: 'Emmarchement départ', x: 0, y: 225, dim: [30, 190, 30, 260] },
       { k: 'largeur2', label: 'Emmarchement arrivée', x: 0, y: 75, dim: [30, 40, 30, 110] },
+      { k: 'profondeur', label: 'Profondeur du tournant', x: 320, y: 150, dim: [270, 150, 370, 150] },
     ]
   }
   // Repère du dessin (480 × 300) → repère affiché : symétrie, puis rotation autour du centre du cadre.

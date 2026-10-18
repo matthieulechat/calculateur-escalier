@@ -23,6 +23,10 @@ const Plan = ({ r }: { r: StairResult }) => {
   const r2 = risers[Math.min(2, n - 1)]
   const cIdx = Math.min(bal + 2, n - 2)
   const turnMid = r.innerLine[Math.floor(r.innerLine.length / 2)]
+  // Bout du jour (demi) : milieu des points les plus avancés vers le mur du fond.
+  const xTip = Math.max(...r.innerLine.map((p) => p.x))
+  const tips = r.innerLine.filter((p) => p.x > xTip - 1e-6)
+  const jourTip: Pt = { x: xTip, y: tips.reduce((acc, p) => acc + p.y, 0) / tips.length }
   const dash = `${fs / 2} ${fs / 3}`
   const lerp = (a: Pt, b: Pt, k: number): Pt => map({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k })
   // Débord au-delà des cotes (décalées de 2 à 2,5 fs), sous la marge du viewBox (5 fs).
@@ -56,6 +60,7 @@ const Plan = ({ r }: { r: StairResult }) => {
     { a: map(o[0]), b: map(o[1]), text: `${r.theta > 0 ? 'Volée départ' : 'Longueur'} ${num(r.input.volee1)}`, offset: -flip * fs * 2.5 },
     ...(r.theta > 0 ? [{ a: map(o[o.length - 1]), b: map(o[o.length - 2]), text: `Volée arrivée ${num(r.input.volee2)}`, offset: flip * fs * 2.5 }] : []),
     { a: map(risers[1].foulee), b: map(r2.foulee), text: `g ${num(r.g)}`, offset: fs * 1.2 },
+    ...(r.input.type === 'demi' ? [{ a: map(jourTip), b: map({ x: o[1].x, y: jourTip.y }), text: `Profondeur ${num(r.input.profondeur)}`, offset: fs * 1.5 }] : []),
   ]
   // Tout ce qui est tracé : les cartes d'étiquettes se posent à côté, jamais dessus.
   const segs = (pts: Pt[]): [Pt, Pt][] => pts.slice(1).map((p, i) => [map(pts[i]), map(p)])
