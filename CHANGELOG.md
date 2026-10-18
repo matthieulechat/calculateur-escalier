@@ -28,6 +28,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Vue en plan brute dans l'export DXF, à droite du plan fini : sans contremarches finies, ligne de foulée ni numéros, contremarches intermédiaires sur le calque fin.
 - Cotes globales de coffrage sur le plan fini de l'export DXF, pour le maçon : contour de l'escalier en béton brut, de trait plein à trait plein, en chaîne (ex. 90 / 10 / 90) puis cote totale sur chaque côté. Ce sont de vraies cotes AutoCAD, étirables, au style `ABAK_BA` du bureau, à la bonne taille une fois insérées dans le gabarit.
 - Cotes de giron intérieur et extérieur sur le plan fini de l'export DXF : chaîne des contremarches brutes le long de chaque limon droit (jour et murs), cotes AutoCAD étirables au style `ABAK_BA-RESA` du bureau, texte oblique.
+- Cote intérieure brute sur chaque volée du plan fini de l'export DXF : longueur du limon jusqu'au bout du jour, puis emmarchement jusqu'au mur du fond.
 - Emmarchement saisi par volée (départ et arrivée) pour les quart et demi tournants : la ligne de foulée passe progressivement d'une distance au jour à l'autre dans le tournant, et le plan cote les deux emmarchements. En demi-tournant, la profondeur du tournant (du bout du jour au mur du fond) se saisit à part. Les anciens fichiers de paramètres reprennent le même emmarchement sur les deux volées, et le plus grand des deux comme profondeur.
 
 ### Changed
@@ -44,6 +45,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Étiquettes du plan annoté placées au plus près de leur cible, sans recouvrir le dessin, dans des cartes bleues assorties aux champs de saisie (cartes bleues aussi en saisie).
 - Sur les schémas, plus de décimale inutile (220 au lieu de 220,0).
 - Titre « Plan — dimensions FINIES » dans la saisie, pour rappeler que les cotes saisies sont finies.
+- Plan fini de l'export DXF : cotes de giron extérieur sorties de l'escalier, au plus près des murs, pour libérer l'intérieur ; les cotes globales de coffrage passent au-delà. Les girons intérieurs restent dans l'escalier.
 
 ### Fixed
 

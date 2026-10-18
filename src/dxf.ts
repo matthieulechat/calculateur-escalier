@@ -112,7 +112,7 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
   // posée sur la ligne, côté vue, à 1 au-delà de l'extrémité. Lettre horizontale comme les autres textes.
   for (const c of cutLines(r)) {
     const pt = (t: number, k = 0): Pt => scr({ x: c.a.x + c.n.x * k + c.d.x * t, y: c.a.y + c.n.y * k + c.d.y * t })
-    const ext = brut ? 2 * size : 2 * DIM_ROW + 10 // au-delà des cotes globales, comme l'exemple
+    const ext = brut ? 2 * size : GIR_OFF + 2 * DIM_ROW + 10 // au-delà des girons extérieurs et des cotes globales
     const ends = [-ext, c.len + ext]
     seg(AXE, pt(ends[0]), pt(ends[1]))
     for (const [t, dir] of [[ends[0], 1], [ends[1], -1]]) {
@@ -199,35 +199,12 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
     const corners = ring.filter((v, i) => turn(ring[(i + ring.length - 1) % ring.length], v, ring[(i + 1) % ring.length]) > Math.sin(Math.PI / 9)) // > 20° : pas les points d'un arc
     const segsRing = ring.map((p, i): [Pt, Pt] => [p, ring[(i + 1) % ring.length]])
     const dot = (p: Pt, d: Pt) => p.x * d.x + p.y * d.y
-    for (const nrm of [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }]) {
-      const t = { x: Math.abs(nrm.y), y: Math.abs(nrm.x) } // sens de lecture de la cote (gauche → droite, bas → haut)
-      const up = { x: -t.y, y: t.x } // côté du texte
-      const edge = Math.max(...ring.map((p) => dot(p, nrm)))
-      // Angle visible : la demi-droite vers l'extérieur ne rencontre aucun autre côté du contour.
-      const seen = (v: Pt) => segsRing.every(([a, b]) => {
-        if (Math.hypot(a.x - v.x, a.y - v.y) < 1e-6 || Math.hypot(b.x - v.x, b.y - v.y) < 1e-6) return true
-        const [sa, sb, s] = [dot(a, t), dot(b, t), dot(v, t)]
-        if (s < Math.min(sa, sb) - 1e-6 || s > Math.max(sa, sb) + 1e-6) return true
-        const depth = Math.abs(sb - sa) < 1e-6 ? Math.max(dot(a, nrm), dot(b, nrm)) : dot(a, nrm) + ((s - sa) / (sb - sa)) * (dot(b, nrm) - dot(a, nrm))
-        return depth <= dot(v, nrm) + 1e-6
-      })
-      // L'angle doit border un côté du contour tourné vers l'extérieur.
-      const faces = (v: Pt) => segsRing.some(([a, b]) => (a === v || b === v)
-        && Math.abs(dot(unit(a, b), nrm)) < 0.01
-        && seen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }))
-      const vs = corners.filter((v) => seen(v) && faces(v)).sort((a, b) => dot(a, t) - dot(b, t))
-        .filter((v, i, all) => i === 0 || dot(v, t) - dot(all[i - 1], t) > 0.05)
-      const rows = vs.length > 2 ? [vs, [vs[0], vs[vs.length - 1]]] : [vs]
-      rows.forEach((row, k) => {
-        const o = edge + DIM_ROW * (k + 1)
-        const pos = (v: Pt, d = 0): Pt => ({ x: t.x * dot(v, t) + nrm.x * (o + d), y: t.y * dot(v, t) + nrm.y * (o + d) })
-        row.slice(1).forEach((v2, i) => dim(row[i], v2, pos, t, up))
-      })
-    }
-
     // Cotes de giron (intérieur et extérieur), comme l'exemple : sur chaque partie droite d'un limon, chaîne des
-    // points où les contremarches brutes le rencontrent, de bout en bout, ligne de cote dans l'escalier.
+    // points où les contremarches brutes le rencontrent, de bout en bout. Ligne de cote dans l'escalier côté jour,
+    // hors de l'escalier côté mur (lisibilité), au plus près du limon : les cotes globales passent au-delà.
+    const outSides: Pt[] = [] // côtés extérieurs portant des cotes de giron
     for (const [limon, end] of [[outer, 'brutOuter'], [inner, 'brutInner']] as const) {
+      const isOuter = limon === outer
       const L = limon.map((p) => out(scr(p)))
       const hits = r.risers.map((x) => ({ p: out(scr(x[end])), m: out(scr({ x: (x.brutInner.x + x.brutOuter.x) / 2, y: (x.brutInner.y + x.brutOuter.y) / 2 })) }))
       // Parties droites : segments consécutifs alignés fusionnés.
@@ -253,10 +230,49 @@ const view = (r: StairResult, rotation: number, blocks: string[], dx: number, dy
         // Côté escalier : celui du milieu de la contremarche.
         const m = on[0].m
         const into = dot({ x: m.x - A.x, y: m.y - A.y }, up) > 0 ? up : { x: -up.x, y: -up.y }
-        const pos = (v: Pt, d = 0): Pt => at(v, into, GIR_OFF + d)
+        const away = isOuter ? { x: -into.x, y: -into.y } : into
+        if (isOuter) outSides.push(away)
+        const pos = (v: Pt, d = 0): Pt => at(v, away, GIR_OFF + d)
         const row = [A, ...on.map(({ p }) => p), B].sort((a, b) => dot(a, t) - dot(b, t))
         row.slice(1).forEach((v2, i) => dim(row[i], v2, pos, t, up, RESA))
+        // Cote intérieure brute, au-delà des girons du jour : longueur du limon jusqu'au jour, puis emmarchement
+        // jusqu'au mur du fond (le bout du limon qui n'est pas un bout d'escalier est celui du jour).
+        if (isOuter) continue
+        const [J, S] = A === L[0] || A === L[L.length - 1] ? [B, A] : [A, B]
+        if (J === L[0] || J === L[L.length - 1]) continue // escalier droit : pas de jour
+        const u = unit(S, J)
+        const far = (pts: Pt[]) => at(J, u, Math.max(...pts.map((p) => dot({ x: p.x - J.x, y: p.y - J.y }, u))))
+        // Bout du jour (au-delà de l'arrondi) puis mur du fond : le 2e nombre est la profondeur saisie.
+        const posIn = (v: Pt, d = 0): Pt => at(v, into, GIR_OFF + DIM_ROW + d)
+        const chain = [S, far(L), far(ring)].sort((a, b) => dot(a, t) - dot(b, t))
+        chain.slice(1).forEach((v2, i) => dim(chain[i], v2, posIn, t, up))
       }
+    }
+    for (const nrm of [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }]) {
+      const t = { x: Math.abs(nrm.y), y: Math.abs(nrm.x) } // sens de lecture de la cote (gauche → droite, bas → haut)
+      const up = { x: -t.y, y: t.x } // côté du texte
+      const edge = Math.max(...ring.map((p) => dot(p, nrm)))
+      // Angle visible : la demi-droite vers l'extérieur ne rencontre aucun autre côté du contour.
+      const seen = (v: Pt) => segsRing.every(([a, b]) => {
+        if (Math.hypot(a.x - v.x, a.y - v.y) < 1e-6 || Math.hypot(b.x - v.x, b.y - v.y) < 1e-6) return true
+        const [sa, sb, s] = [dot(a, t), dot(b, t), dot(v, t)]
+        if (s < Math.min(sa, sb) - 1e-6 || s > Math.max(sa, sb) + 1e-6) return true
+        const depth = Math.abs(sb - sa) < 1e-6 ? Math.max(dot(a, nrm), dot(b, nrm)) : dot(a, nrm) + ((s - sa) / (sb - sa)) * (dot(b, nrm) - dot(a, nrm))
+        return depth <= dot(v, nrm) + 1e-6
+      })
+      // L'angle doit border un côté du contour tourné vers l'extérieur.
+      const faces = (v: Pt) => segsRing.some(([a, b]) => (a === v || b === v)
+        && Math.abs(dot(unit(a, b), nrm)) < 0.01
+        && seen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }))
+      const vs = corners.filter((v) => seen(v) && faces(v)).sort((a, b) => dot(a, t) - dot(b, t))
+        .filter((v, i, all) => i === 0 || dot(v, t) - dot(all[i - 1], t) > 0.05)
+      const rows = vs.length > 2 ? [vs, [vs[0], vs[vs.length - 1]]] : [vs]
+      const shift = outSides.some((n) => dot(n, nrm) > 0.99) ? GIR_OFF : 0
+      rows.forEach((row, k) => {
+        const o = edge + shift + DIM_ROW * (k + 1)
+        const pos = (v: Pt, d = 0): Pt => ({ x: t.x * dot(v, t) + nrm.x * (o + d), y: t.y * dot(v, t) + nrm.y * (o + d) })
+        row.slice(1).forEach((v2, i) => dim(row[i], v2, pos, t, up))
+      })
     }
   }
 
