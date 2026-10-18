@@ -8,7 +8,8 @@ export interface StairInput {
   type: StairType
   sens: Sens
   orientation?: number // degrés sens trigo : rotation du plan dans l'export DXF (0, 90, 180, 270)
-  largeur: number // emmarchement
+  largeur: number // emmarchement de la volée de départ (seule volée si droit)
+  largeur2: number // emmarchement de la volée d'arrivée
   jour: number // quart : rayon du jour arrondi ; demi : largeur du jour
   jourArrondi: boolean // false = jour droit (angles vifs)
   volee1: number // de la 1re contremarche au mur du fond (longueur de foulée si droit)
@@ -80,7 +81,8 @@ export interface StairResult {
   n: number
   h: number
   g: number
-  f: number // distance de la ligne de foulée au collet
+  f: number // distance de la ligne de foulée au collet, volée de départ
+  f2: number // idem, volée d'arrivée
   lf: number // longueur développée de la ligne de foulée
   theta: number
   nbBas: number
@@ -154,7 +156,27 @@ const autoN = (H: number, lf: number): number => {
 
 type Seg = { kind: 'line'; L: number } | { kind: 'arc'; a: number; r: number }
 
-const segLen = (sg: Seg, d: number): number => (sg.kind === 'line' ? sg.L : sg.a * (sg.r + d))
+// Distance au jour d'une ligne parallèle : [début, fin], variable dans le tournant si les emmarchements diffèrent.
+type Off = [number, number]
+
+// Longueur à distance d du jour ; dans un arc, d varie linéairement avec l'angle de dA à dB.
+const segLen = (sg: Seg, [dA, dB]: Off): number => (sg.kind === 'line' ? sg.L : sg.a * (sg.r + (dA + dB) / 2))
+
+// Distance au jour au début et à la fin de chaque segment : d1 sur la volée de départ, d2 sur l'arrivée,
+// interpolée selon l'angle tourné.
+const offsets = (segs: Seg[], [d1, d2]: Off): Off[] => {
+  const theta = segs.reduce((acc, sg) => acc + (sg.kind === 'arc' ? sg.a : 0), 0)
+  const dAt = (phi: number) => (theta > 0 ? d1 + ((d2 - d1) * phi) / theta : d1)
+  let phi = 0
+  return segs.map((sg) => {
+    const a = dAt(phi)
+    if (sg.kind === 'arc') phi += sg.a
+    return [a, dAt(phi)]
+  })
+}
+
+// Foulée : milieu de l'emmarchement, à 50 cm du collet au-delà de 1 m.
+const fouleeOf = (W: number): number => (W <= 100 ? W / 2 : 50)
 
 // Tracé du jour : volée, tournant (angles vifs ou arrondi), volée.
 const buildSegs = (input: StairInput, L1: number, L2: number): Seg[] => {
@@ -170,23 +192,30 @@ const buildSegs = (input: StairInput, L1: number, L2: number): Seg[] => {
 }
 
 export const computeStair = (input: StairInput): StairResult | { error: string } => {
-  const { type, largeur: W } = input
-  // Volées cotées jusqu'au mur du fond : on retire l'emmarchement et le rayon du jour arrondi
-  // pour obtenir la partie droite au jour.
+  const { type } = input
+  const W1 = input.largeur
+  const W2 = type === 'droit' ? W1 : input.largeur2
+  // Volées cotées jusqu'au mur du fond : on retire la profondeur de la zone tournante et le rayon du jour
+  // arrondi pour obtenir la partie droite au jour. Quart : le mur du fond d'une volée borde l'autre volée.
+  // Demi : mur du fond commun, à la distance du plus large des deux emmarchements.
   const rj = input.jourArrondi ? (type === 'demi' ? input.jour / 2 : input.jour) : 0
-  const L1 = type === 'droit' ? input.volee1 : input.volee1 - W - rj
-  const L2 = type === 'droit' ? 0 : input.volee2 - W - rj
+  const back1 = type === 'quart' ? W2 : Math.max(W1, W2)
+  const back2 = type === 'quart' ? W1 : Math.max(W1, W2)
+  const L1 = type === 'droit' ? input.volee1 : input.volee1 - back1 - rj
+  const L2 = type === 'droit' ? 0 : input.volee2 - back2 - rj
   const segs = buildSegs(input, L1, L2)
   const theta = segs.reduce((acc, sg) => acc + (sg.kind === 'arc' ? sg.a : 0), 0)
-  // Ligne de foulée : milieu de l'emmarchement, à 50 cm du collet au-delà de 1 m.
-  const f = W <= 100 ? W / 2 : 50
+  const f = fouleeOf(W1)
+  const f2 = fouleeOf(W2)
+  const F: Off = [f, f2]
+  const Z: Off = [0, 0]
+  const offF = offsets(segs, F)
   const H = input.nfHaut - input.nfBas
-  const turnSegs = segs.slice(1, -1)
-  const turnF = turnSegs.reduce((acc, sg) => acc + segLen(sg, f), 0)
-  const turnU = turnSegs.reduce((acc, sg) => acc + segLen(sg, 0), 0)
+  const turnF = segs.slice(1, -1).reduce((acc, sg, i) => acc + segLen(sg, offF[i + 1]), 0)
+  const turnU = segs.slice(1, -1).reduce((acc, sg) => acc + segLen(sg, Z), 0)
   const lf = L1 + turnF + L2
 
-  if (W <= 0 || input.jour < 0) return { error: 'Dimensions invalides.' }
+  if (W1 <= 0 || W2 <= 0 || input.jour < 0) return { error: 'Dimensions invalides.' }
   if (L1 < 0 || L2 < 0) return { error: 'Volée plus courte que l’emmarchement + le jour : vérifier les longueurs jusqu’au mur du fond.' }
   if (H <= 0) return { error: 'Le niveau fini haut doit être au-dessus du niveau fini bas.' }
   if (lf <= 0) return { error: 'Longueur de foulée nulle.' }
@@ -196,16 +225,19 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
   const g = lf / (n - 1)
   const warnings: string[] = []
 
-  // Point à la distance d du jour, à l'abscisse `along` mesurée sur cette ligne (le tournant est à gauche).
-  const at = (d: number, along: number): Pt => {
+  // Point de la ligne à la distance D du jour, à l'abscisse `along` mesurée sur cette ligne (le tournant est à gauche).
+  const at = (D: Off, along: number): Pt => {
+    const offs = offsets(segs, D)
     let x = 0
     let y = 0
     let hd = 0
+    let d = offs[0][0]
     let rem = along
     const off = () => ({ x: x + d * Math.sin(hd), y: y - d * Math.cos(hd) })
     for (let i = 0; i < segs.length; i++) {
       const sg = segs[i]
-      const len = segLen(sg, d)
+      const [dA, dB] = offs[i]
+      const len = segLen(sg, offs[i])
       const last = i === segs.length - 1
       const inside = last || rem <= len
       const step = inside ? rem : len
@@ -213,11 +245,22 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
         x += step * Math.cos(hd)
         y += step * Math.sin(hd)
       } else {
+        // Longueur parcourue à l'angle phi : (r + dA)·phi + k·phi², d variant de dA à dB sur l'arc.
         // Angle vif (longueur nulle) : on ne tourne qu'une fois le coin franchi.
-        const phi = len > 0 ? step / (sg.r + d) : inside && rem <= 0 ? 0 : sg.a
+        const b = sg.r + dA
+        const k = (dB - dA) / (2 * sg.a)
+        const phi =
+          len > 0
+            ? Math.abs(k) < EPS
+              ? step / b
+              : Math.min(sg.a, (-b + Math.sqrt(Math.max(0, b * b + 4 * k * step))) / (2 * k))
+            : inside && rem <= 0
+              ? 0
+              : sg.a
         const cx = x - sg.r * Math.sin(hd)
         const cy = y + sg.r * Math.cos(hd)
         hd += phi
+        d = dA + ((dB - dA) * phi) / sg.a
         x = cx + sg.r * Math.sin(hd)
         y = cy - sg.r * Math.cos(hd)
       }
@@ -227,28 +270,29 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
     return off()
   }
 
-  const sample = (d: number): Pt[] => {
+  const sample = (D: Off): Pt[] => {
+    const offs = offsets(segs, D)
     const pts: Pt[] = []
     let acc = 0
-    for (const sg of segs) {
-      const len = segLen(sg, d)
+    segs.forEach((sg, i) => {
+      const len = segLen(sg, offs[i])
       const k = sg.kind === 'arc' && len > 0 ? 24 : 1
-      for (let i = 0; i < k; i++) pts.push(at(d, acc + (len * i) / k))
+      for (let j = 0; j < k; j++) pts.push(at(D, acc + (len * j) / k))
       acc += len
-    }
-    pts.push(at(d, acc))
+    })
+    pts.push(at(D, acc))
     return pts
   }
 
-  const innerLine = sample(0)
-  const E = at(0, L1 + turnU) // départ de la volée d'arrivée, côté jour
-  const xBack = Math.max(...innerLine.map((pt) => pt.x)) + W
+  const innerLine = sample(Z)
+  const E = at(Z, L1 + turnU) // départ de la volée d'arrivée, côté jour
+  const xBack = Math.max(...innerLine.map((pt) => pt.x)) + back1
   const outerLine: Pt[] =
     type === 'droit'
-      ? [{ x: 0, y: -W }, { x: L1, y: -W }]
+      ? [{ x: 0, y: -W1 }, { x: L1, y: -W1 }]
       : type === 'quart'
-        ? [{ x: 0, y: -W }, { x: E.x + W, y: -W }, { x: E.x + W, y: E.y + L2 }]
-        : [{ x: 0, y: -W }, { x: xBack, y: -W }, { x: xBack, y: E.y + W }, { x: E.x - L2, y: E.y + W }]
+        ? [{ x: 0, y: -W1 }, { x: E.x + W2, y: -W1 }, { x: E.x + W2, y: E.y + L2 }]
+        : [{ x: 0, y: -W1 }, { x: xBack, y: -W1 }, { x: xBack, y: E.y + W2 }, { x: E.x - L2, y: E.y + W2 }]
 
   // Abscisses des nez sur la foulée, et au collet par défaut (marches rayonnantes).
   const sTurn1 = L1 + turnF
@@ -306,14 +350,14 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
   }
 
   const risers: Riser[] = s.map((sj, j) => {
-    const inner = at(0, u[j])
-    const foulee = at(f, sj)
+    const inner = at(Z, u[j])
+    const foulee = at(F, sj)
     const hit = hitPolyline(inner, foulee, outerLine)
     // Face brute : parallèle à la face finie, reculée de la finition dans le sens de la montée.
     const d = { x: hit.pt.x - inner.x, y: hit.pt.y - inner.y }
     const len = Math.hypot(d.x, d.y)
-    const t0 = at(f, sj - 0.5)
-    const t1 = at(f, sj + 0.5)
+    const t0 = at(F, sj - 0.5)
+    const t1 = at(F, sj + 0.5)
     let nx = -d.y / len
     let ny = d.x / len
     if (nx * (t1.x - t0.x) + ny * (t1.y - t0.y) < 0) [nx, ny] = [-nx, -ny]
@@ -338,8 +382,8 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
 
   let separation: [Pt, Pt] | undefined
   if (theta > 0) {
-    const a = at(0, L1 + turnU / 2)
-    const b = at(f, L1 + turnF / 2)
+    const a = at(Z, L1 + turnU / 2)
+    const b = at(F, L1 + turnF / 2)
     separation = [a, hitPolyline(a, b, outerLine).pt]
   }
 
@@ -389,6 +433,7 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
     h,
     g,
     f,
+    f2,
     lf,
     theta,
     nbBas,
@@ -396,7 +441,7 @@ export const computeStair = (input: StairInput): StairResult | { error: string }
     risers,
     innerLine,
     outerLine,
-    fouleeLine: sample(f),
+    fouleeLine: sample(F),
     separation,
     herses,
     rows,

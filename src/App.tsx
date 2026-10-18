@@ -17,6 +17,7 @@ const DEFAULTS: StairInput = {
   type: "demi",
   sens: "gauche",
   largeur: 90,
+  largeur2: 90,
   jour: 20,
   jourArrondi: false,
   volee1: 220,
@@ -60,7 +61,9 @@ const App = () => {
       const data: unknown = JSON.parse(await file.text());
       if (typeof data !== "object" || data === null || Array.isArray(data))
         throw new Error();
-      setInput({ ...DEFAULTS, ...(data as Partial<StairInput>) });
+      const p = data as Partial<StairInput>;
+      // Fichier antérieur à l'emmarchement par volée : même emmarchement sur les deux volées.
+      setInput({ ...DEFAULTS, largeur2: p.largeur ?? DEFAULTS.largeur2, ...p });
     } catch {
       alert("Fichier de paramètres invalide.");
     }

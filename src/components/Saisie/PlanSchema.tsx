@@ -36,7 +36,8 @@ const PlanSchema = ({ value, onChange }: SaisieProps) => {
     spots = [
       { k: 'volee1', label: 'Volée départ (→ mur du fond)', x: 190, y: 283, dim: [40, 270, 340, 270] },
       { k: 'volee2', label: 'Volée arrivée (→ mur du fond)', x: 385, y: 145, dim: [352, 30, 352, 260] },
-      { k: 'largeur', label: 'Emmarchement', x: 0, y: 215, dim: [30, 170, 30, 260] },
+      { k: 'largeur', label: 'Emmarchement départ', x: 0, y: 215, dim: [30, 170, 30, 260] },
+      { k: 'largeur2', label: 'Emmarchement arrivée', x: 295, y: 5, dim: [250, 18, 340, 18] },
       ...(round ? [{ k: 'jour' as const, label: 'Rayon du jour', x: 195, y: 110, dim: [210, 130, 238, 158] as Spot['dim'] }] : []),
     ]
   } else {
@@ -48,7 +49,8 @@ const PlanSchema = ({ value, onChange }: SaisieProps) => {
       { k: 'volee1', label: 'Volée départ (1re marche → mur du fond)', x: 205, y: 283, dim: [40, 270, 370, 270] },
       { k: 'volee2', label: 'Volée arrivée (palier → mur du fond)', x: 205, y: 17, dim: [40, 30, 370, 30] },
       { k: 'jour', label: 'Largeur du jour', x: 200, y: 150, dim: [262, 110, 262, 190] },
-      { k: 'largeur', label: 'Emmarchement', x: 0, y: 225, dim: [30, 190, 30, 260] },
+      { k: 'largeur', label: 'Emmarchement départ', x: 0, y: 225, dim: [30, 190, 30, 260] },
+      { k: 'largeur2', label: 'Emmarchement arrivée', x: 0, y: 75, dim: [30, 40, 30, 110] },
     ]
   }
   // Repère du dessin (480 × 300) → repère affiché : symétrie, puis rotation autour du centre du cadre.

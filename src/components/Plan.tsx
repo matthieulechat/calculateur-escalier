@@ -35,7 +35,7 @@ const Plan = ({ r }: { r: StairResult }) => {
   const labels: Label[] = [
     { at: map(risers[0].foulee), text: 'Départ (1re contremarche)' },
     { at: map(end), text: `Arrivée (${n}e CM = nez de palier)` },
-    { at: lerp(risers[0].foulee, risers[1].foulee, 0.5), text: `Ligne de foulée (à ${num(r.f)} du jour)`, color: '#dc2626', side: 'left' },
+    { at: lerp(risers[0].foulee, risers[1].foulee, 0.5), text: `Ligne de foulée (à ${r.f === r.f2 ? num(r.f) : `${num(r.f)} puis ${num(r.f2)}`} du jour)`, color: '#dc2626', side: 'left' },
     { at: map(mid(r.outerLine[0], r.outerLine[1])), text: 'Mur / limon extérieur' },
     // Cibles près du mur extérieur : lignes de rappel courtes, hors de la zone des cotes.
     { at: lerp(risers[1].brutInner, risers[1].brutOuter, 0.85), text: 'Contremarche brute (trait plein)', side: 'left' },
@@ -51,7 +51,8 @@ const Plan = ({ r }: { r: StairResult }) => {
   }
 
   const dims = [
-    { a: map(risers[0].inner), b: map(risers[0].outer), text: `Emmarchement ${num(r.input.largeur)}`, offset: -fs * 2 * flip },
+    { a: map(risers[0].inner), b: map(risers[0].outer), text: `Emmarchement${r.theta > 0 ? ' départ' : ''} ${num(r.input.largeur)}`, offset: -fs * 2 * flip },
+    ...(r.theta > 0 ? [{ a: map(risers[n - 1].inner), b: map(risers[n - 1].outer), text: `Emmarchement arrivée ${num(r.input.largeur2)}`, offset: fs * 2 * flip }] : []),
     { a: map(o[0]), b: map(o[1]), text: `${r.theta > 0 ? 'Volée départ' : 'Longueur'} ${num(r.input.volee1)}`, offset: -flip * fs * 2.5 },
     ...(r.theta > 0 ? [{ a: map(o[o.length - 1]), b: map(o[o.length - 2]), text: `Volée arrivée ${num(r.input.volee2)}`, offset: flip * fs * 2.5 }] : []),
     { a: map(risers[1].foulee), b: map(r2.foulee), text: `g ${num(r.g)}`, offset: fs * 1.2 },
