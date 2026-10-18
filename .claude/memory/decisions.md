@@ -34,3 +34,5 @@ register: decisions
 | [BDR-026](decisions/BDR-026.md) | 2026-10-18 | Coupes : axe aux planchers, fermeture brute dans la volée | #coupe #dxf #calques #plancher #fermeture #abak | actif |
 | [BDR-027](decisions/BDR-027.md) | 2026-10-18 | Coupes : numéros de marche, marche entamée comprise | #coupe #dxf #numerotation #marches #annotation #collision | actif |
 | [BDR-028](decisions/BDR-028.md) | 2026-10-18 | Cote intérieure brute : limon jusqu'au jour puis profondeur | #dxf #dimension #jour #profondeur #limon #abak | actif |
+| [BDR-029](decisions/BDR-029.md) | 2026-10-18 | Coupes DXF : cote de hauteur brute groupée « n x h » | #dxf #coupe #dimension #hauteur #brut #abak | actif |
+| [BDR-030](decisions/BDR-030.md) | 2026-10-18 | Coupes DXF : cotes de finition sur la marche du milieu | #dxf #coupe #dimension #finition #calque #numerotation | actif |

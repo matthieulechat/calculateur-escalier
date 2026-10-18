@@ -165,3 +165,12 @@ Plan DXF coté : les cotes de giron extérieur sortent de l'escalier (12 du limo
 
 - [BDR-028](decisions/BDR-028.md) — cote intérieure brute jusqu'au bout du jour
 - [LRN-026](learnings/LRN-026.md) — fichier reformaté en entier : checkout + script
+
+---
+
+Cotation des coupes de l'export DXF. D'abord une chaîne de cotes verticales côté départ, de brut à brut, avec les hauteurs égales regroupées en « n x h » par texte imposé (comme la capture du bureau) ; `addDim` est sortie de la vue en plan pour servir aussi aux coupes. Puis deux cotes de finition orange (calque `ABAK_BC-STR METAL`) sur la marche du milieu : épaisseur de finition de marche et de contremarche. Baptiste a fait recaler leur position deux fois : au milieu du giron et à mi-hauteur de la contremarche, puis mesurés sur le brut et non sur le fini. Leur emprise est réservée pour que les numéros ne les touchent pas. Vérifié par aperçu PNG ezdxf en sens gauche et droite ; pas encore ouvert dans AutoCAD. Commit `67a70fc` poussé.
+
+**Entrées clés :**
+
+- [BDR-029](decisions/BDR-029.md) — cote de hauteur brute groupée « n x h »
+- [BDR-030](decisions/BDR-030.md) — cotes de finition sur la marche du milieu
