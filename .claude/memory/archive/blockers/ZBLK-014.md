@@ -1,5 +1,5 @@
 ---
-id: BLK-014
+id: ZBLK-014
 type: blocker
 date: 2026-10-18
 summary: "Fini / brut : 4 allers-retours sur l'attache des cotes"
@@ -7,7 +7,7 @@ tags: [cotation, fini, brut, communication, dxf, convention]
 status: résolu
 ---
 
-# BLK-014 — Fini / brut : 4 allers-retours sur le point d'attache des cotes
+# ZBLK-014 — Fini / brut : 4 allers-retours sur le point d'attache des cotes
 
 **Friction** : Baptiste répétait que la cote « partait du brut » ou « devait partir du trait plein », alors que je la recalais à chaque fois sur la contremarche finie (égale à la saisie). Captures et contre-propositions se sont enchaînées sans converger.
 
@@ -17,4 +17,4 @@ status: résolu
 
 ## Références
 
-- [BDR-022](../decisions/BDR-022.md) — convention retenue
+- [BDR-022](../../decisions/BDR-022.md) — convention retenue

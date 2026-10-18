@@ -18,3 +18,4 @@ register: archive-blockers
 | [ZBLK-011](blockers/ZBLK-011.md) | 2026-10-16 | `git push` refusé (403) sur le repo de Matthieu | #git #github #permissions #push #collaboration | résolu |
 | [ZBLK-012](blockers/ZBLK-012.md) | 2026-10-17 | Numéros « trop petits » : DXF testé issu d'un ancien code | #dxf #pwa #cache #cadcraft #stale-build | résolu le 2026-10-17 |
 | [ZBLK-013](blockers/ZBLK-013.md) | 2026-10-17 | Patch Python inline : `\\r\\n` échappé, assert en échec | #python #heredoc #escaping #claude-code #patch #bash | résolu le 2026-10-17 |
+| [ZBLK-014](blockers/ZBLK-014.md) | 2026-10-18 | Fini / brut : 4 allers-retours sur l'attache des cotes | #cotation #fini #brut #communication #dxf #convention | résolu le 2026-10-18 |

@@ -29,3 +29,4 @@ register: decisions
 | [BDR-021](decisions/BDR-021.md) | 2026-10-17 | Fichier de paramètres = StairInput brut en JSON | #import-export #json #stairinput #retrocompat #react | actif |
 | [BDR-022](decisions/BDR-022.md) | 2026-10-18 | Saisie au fini, export coté au brut pour le maçon | #dxf #cotation #fini #brut #convention #macon #coffrage | actif |
 | [BDR-023](decisions/BDR-023.md) | 2026-10-18 | Cotes globales DXF : vraies DIMENSION au style ABAK_BA | #dxf #dimension #dimstyle #abak #autocad #r12 | actif |
+| [BDR-024](decisions/BDR-024.md) | 2026-10-18 | Emmarchement par volée, profondeur du demi-tour saisie | #emmarchement #volee #foulee #tournant #mur-du-fond #saisie #demi-tournant | actif |

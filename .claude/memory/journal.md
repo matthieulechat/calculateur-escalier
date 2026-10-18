@@ -129,4 +129,13 @@ Gros malentendu sur fini et brut : plusieurs allers-retours avant d'établir que
 
 - [BDR-022](decisions/BDR-022.md) — saisie au fini, export coté au brut
 - [BDR-023](decisions/BDR-023.md) — vraies DIMENSION au style ABAK_BA
-- [BLK-014](blockers/BLK-014.md) — malentendu fini / brut
+- [ZBLK-014](archive/blockers/ZBLK-014.md) — malentendu fini / brut
+
+---
+
+Emmarchement par volée : `largeur` (départ) et `largeur2` (arrivée) en quart et demi tournant. Le moteur gère une ligne parallèle au jour à distance variable : la foulée passe de f(W1) à f(W2) selon l'angle tourné, avec inversion quadratique de la longueur d'arc pour placer les nez. En quart, chaque volée se cote jusqu'au mur extérieur de l'autre. Pour le demi, j'avais d'abord pris le plus large des deux emmarchements comme profondeur du tournant ; après plusieurs reformulations (Baptiste ne voyait pas de quelle profondeur je parlais avant sa capture d'écran), il a choisi un champ « Profondeur du tournant » saisi. Le plan cote les deux emmarchements et la profondeur ; les anciens JSON restent lisibles. Le hook formateur a reformaté `Plan.tsx` et `stair.check.ts` au style Prettier par défaut ; le second était déjà commité, remis au style du projet dans le commit suivant. Commits `a521b4c` et `44fa2b5`, poussés.
+
+**Entrées clés :**
+
+- [BDR-024](decisions/BDR-024.md) — emmarchement par volée, profondeur du demi-tour saisie
+- [BLK-015](blockers/BLK-015.md) — hook formateur hors style du projet
