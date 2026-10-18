@@ -31,3 +31,4 @@ register: learnings
 | [LRN-023](learnings/LRN-023.md) | 2026-10-17 | Overlay HTML vertical : coller un bord au point d'ancrage | #css #transform #rotate #overlay #positioning #svg |
 | [LRN-024](learnings/LRN-024.md) | 2026-10-18 | Cotes R12 minuscules dans un gabarit annotatif : DSTYLE | #dxf #dimension #annotatif #dimscale #xdata #gabarit #autocad |
 | [LRN-025](learnings/LRN-025.md) | 2026-10-18 | Cotes automatiques : angles visibles + côté tourné dehors | #dxf #cotation #geometrie #lancer-de-rayon #contour #plan |
+| [LRN-026](learnings/LRN-026.md) | 2026-10-18 | Fichier reformaté en entier hors style : checkout + script | #formatter #prettier #edit #git #diff #interruption |

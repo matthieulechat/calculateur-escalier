@@ -156,3 +156,12 @@ Enrichissement des coupes DXF. Les traits d'axe aux bouts des coupes ne ferment 
 
 - [BDR-026](decisions/BDR-026.md) — Coupes : axe aux planchers, fermeture brute dans la volée
 - [BDR-027](decisions/BDR-027.md) — Coupes : numéros de marche, marche entamée comprise
+
+---
+
+Plan DXF coté : les cotes de giron extérieur sortent de l'escalier (12 du limon, côté mur) pour libérer l'intérieur, les girons intérieurs restent dedans, et les cotes globales de coffrage reculent de 12 sur les côtés concernés (lignes de coupe allongées). Ajout d'une cote intérieure brute par volée : longueur du limon jusqu'au bout du jour puis profondeur jusqu'au mur du fond, mesurée après l'arrondi pour retomber sur la profondeur saisie (90 au lieu de 95). Vérifié par aperçu SVG (arrondi sens gauche, jour droit sens droite : 124,5 + 90 = 214,5, 117 + 90 = 207), check, lint et build. Une interruption a laissé `dxf.ts` reformaté en entier : checkout et réapplication par script. Serveurs de dev orphelins coupés. Commit 873c8fe.
+
+**Entrées clés :**
+
+- [BDR-028](decisions/BDR-028.md) — cote intérieure brute jusqu'au bout du jour
+- [LRN-026](learnings/LRN-026.md) — fichier reformaté en entier : checkout + script

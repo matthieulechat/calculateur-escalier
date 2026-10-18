@@ -33,3 +33,4 @@ register: decisions
 | [BDR-025](decisions/BDR-025.md) | 2026-10-18 | Cotes de giron DXF au style ABAK_BA-RESA | #dxf #dimension #giron #resa #limon #abak | actif |
 | [BDR-026](decisions/BDR-026.md) | 2026-10-18 | Coupes : axe aux planchers, fermeture brute dans la volée | #coupe #dxf #calques #plancher #fermeture #abak | actif |
 | [BDR-027](decisions/BDR-027.md) | 2026-10-18 | Coupes : numéros de marche, marche entamée comprise | #coupe #dxf #numerotation #marches #annotation #collision | actif |
+| [BDR-028](decisions/BDR-028.md) | 2026-10-18 | Cote intérieure brute : limon jusqu'au jour puis profondeur | #dxf #dimension #jour #profondeur #limon #abak | actif |
